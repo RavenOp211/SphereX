@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <style>
+    :root {
+      color-scheme: dark;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px);
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font: 14px 'Orbitron', system-ui, sans-serif;
+      background: #0b0918;
+      color: #efd9ce;
+    }
+    img {
+      max-width: 100%;
+    }
+    [hidden]:not([hidden=until-found i]) {
+      display: none !important;
+    }
+  </style>
+  <title>SPHEREx Demo</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Redaction+50&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="space" aria-label="Interactive 3D solar system"></canvas>
+<div class="veil"></div>
+<div class="labels" id="labels" hidden></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <circle cx="15" cy="15" r="5" fill="#efd9ce"/>
+        <ellipse cx="15" cy="15" rx="13" ry="5.5" fill="none" stroke="#957fef" stroke-width="1.5" transform="rotate(-28 15 15)"/>
+        <circle cx="26" cy="9" r="1.8" fill="#dec0f1"/>
+      </svg>
+      SPHEREx Sky Watch
+    </div>
+    <div class="tabs" role="tablist" aria-label="Views">
+      <button role="tab" id="tab-viewer" aria-selected="true" aria-controls="viewer">Sky lab</button>
+      <button role="tab" id="tab-tour" aria-selected="false" aria-controls="tour">Space tour</button>
+    </div>
+  </header>
+
+  <main id="viewer">
+    <section class="intro" style="margin-bottom:18px">
+      <h1>Sort the sky by colour and brightness</h1>
+      <p>Every object glows differently across infrared light. Pick a target, change the lens and wavelength, and watch stars, brown dwarfs, galaxies and asteroids separate. Click any object to read its details.</p>
+    </section>
+
+    <section class="panel" style="margin-bottom:16px" aria-label="Choose a target">
+      <div class="step"><i>1</i>Pick something to look at</div>
+      <div class="chips" id="targets"></div>
+      <p class="tip" id="tip"></p>
+    </section>
+
+    <div class="grid">
+      <div class="col">
+        <section class="panel" aria-label="Sky picture">
+          <div class="stage">
+            <canvas id="sky" width="640" height="640" aria-label="Simulated sky patch, played like a short video. Click an object for details."></canvas>
+            <div class="badge" id="badge">Picture 1 of 8</div>
+            <div class="readout" id="readout">Move over the picture to read the sky position. Click any object to see its details.</div>
+          </div>
+          <div class="transport">
+            <button class="play" id="play" aria-label="Play or pause">
+              <svg id="playicon" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"></svg>
+            </button>
+            <div class="scrub">
+              <input type="range" id="frame" min="0" max="7" value="0" step="1" aria-label="Picture number">
+              <div class="dates"><span id="d0"></span><span id="d1"></span></div>
+            </div>
+          </div>
+          <div class="meta" id="meta"></div>
+        </section>
+      </div>
+
+      <aside class="col">
+        <section class="panel tune" aria-label="Object lab controls">
+          <div class="step"><i>2</i>Tune the instrument</div>
+          <div class="group">
+            <span class="lbl">Quick starts</span>
+            <div class="chips" id="presets"></div>
+            <p class="hint" id="presetMsg">Try one, then adjust the controls below.</p>
+          </div>
+          <div class="group">
+            <span class="lbl">Lens <small>SPHEREx has 6 detectors</small></span>
+            <div class="swatches" id="lensSw" role="group" aria-label="Lens"></div>
+            <p class="hint" id="lensHint"></p>
+          </div>
+          <div class="group">
+            <label class="lbl" for="band">Wavelength <output id="bandout"></output></label>
+            <input type="range" id="band" min="0" max="16" step="1" value="8">
+            <div class="specbar" aria-hidden="true"><i id="specmark"></i></div>
+            <div class="specbar-scale" aria-hidden="true"><span>0.75 µm</span><span>5 µm</span></div>
+          </div>
+          <div class="group">
+            <span class="lbl">View style</span>
+            <div class="seg four" id="modes" role="group" aria-label="View style">
+              <button data-m="normal" aria-pressed="true">Normal</button>
+              <button data-m="color" aria-pressed="false">Colour mix</button>
+              <button data-m="diff" aria-pressed="false">Spot change</button>
+              <button data-m="trail" aria-pressed="false">Trails</button>
+            </div>
+            <p class="hint" id="modehint"></p>
+          </div>
+          <div class="group">
+            <label class="lbl" for="gain">Brightness boost <output id="gainout"></output></label>
+            <input type="range" id="gain" min="-1" max="1" step="0.05" value="0">
+            <label class="lbl" for="thr" style="margin-top:6px">Hide fainter objects <output id="throut"></output></label>
+            <input type="range" id="thr" min="0" max="100" step="1" value="0">
+            <p class="hint">Fainter objects are dimmed so brighter ones stand out.</p>
+          </div>
+          <details class="group collapsible">
+              <summary class="lbl">Object types</summary>
+                  <div class="group-body">
+                    <div class="row-between">
+                      <span class="hint">Filter visible object classes</span>
+                        <button class="linkbtn" id="classAll" type="button">Show all</button>
+                    </div>
+                      <div class="chips" id="classes"></div>
+                        <label class="check"><input type="checkbox" id="marks" checked> Ring each object in its type colour</label>
+                  </div>
+            </details>
+          <div class="group">
+            <label class="lbl" for="fov">Zoom <output id="fovout"></output></label>
+            <input type="range" id="fov" min="1" max="15" step="0.5" value="2.5">
+            <p class="hint">Zoom out to catch fast movers. Zoom in for fine detail.</p>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="grid even" style="margin-top:16px">
+      <section class="panel det" id="details" aria-live="polite">
+        <div class="step"><i>3</i>Object details</div>
+        <div class="empty" id="dEmpty">
+          <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+            <circle cx="22" cy="22" r="4" fill="#957fef"/>
+            <circle cx="22" cy="22" r="13" fill="none" stroke="#dec0f1" stroke-width="1.5" stroke-dasharray="4 4"/>
+          </svg>
+          <span>Click any object in the picture, the list or the colour map.</span>
+        </div>
+        <div id="dBody" hidden>
+          <div class="det-head">
+            <h3 id="dName"></h3>
+            <div class="tags">
+              <span class="pill" id="dPill"></span>
+              <span class="simtag" id="dSim" hidden>Simulated object</span>
+            </div>
+          </div>
+          <p id="dDesc"></p>
+          <p class="look" id="dLook"></p>
+          <dl class="facts" id="facts"></dl>
+          <div class="lbl" style="font-weight:600;margin-bottom:6px;font-size:14px">Infrared fingerprint, 102 bands</div>
+          <canvas id="spec" width="640" height="400" aria-label="Spectrum of the selected object across 102 infrared bands" style="width:100%;height:auto;aspect-ratio:16/10;display:block;border-radius:8px;background:rgba(11,9,24,.72)"></canvas>
+          <p class="hint" style="margin-top:8px">Each dot is one band, coloured by its lens. The white line marks the wavelength you are viewing.</p>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="dOnly" type="button"></button>
+            <button class="btn" id="dCopy" type="button">Copy details</button>
+            <span class="hint" id="dMsg"></span>
+          </div>
+        </div>
+      </section>
+
+      <div class="col">
+        <section class="panel">
+          <div class="step"><i>4</i>Sort the objects</div>
+          <div class="seg four" id="sortSeg" role="group" aria-label="Sort by">
+            <button data-s="bright" aria-pressed="true">Brightest</button>
+            <button data-s="red" aria-pressed="false">Reddest</button>
+            <button data-s="blue" aria-pressed="false">Bluest</button>
+            <button data-s="fast" aria-pressed="false">Fastest</button>
+          </div>
+          <p class="hint" id="listInfo" style="margin-top:10px"></p>
+          <div class="list" id="list"></div>
+        </section>
+        <section class="panel">
+          <div class="step"><i>5</i>Colour and brightness map</div>
+          <canvas id="cmap" width="600" height="380" aria-label="Every object in the field plotted by colour and brightness"></canvas>
+          <p class="hint" style="margin-top:8px">Each dot is one object. Change the lens and watch the dots rise and fall. Objects of one type group together. Click a dot to select it.</p>
+        </section>
+      </div>
+    </div>
+
+    <details class="panel more" style="margin-top:16px">
+      <summary>More options</summary>
+      <div class="inner">
+        <div>
+          <div class="lbl" style="font-weight:600;margin-bottom:6px">Go to any patch of sky</div>
+          <form id="coordform" class="coords">
+            <label for="ra">Right ascension<input type="text" id="ra" value="17h57m48.5s" autocomplete="off"></label>
+            <label for="dec">Declination<input type="text" id="dec" value="+4d41m36s" autocomplete="off"></label>
+            <div class="row" style="grid-column:1/-1">
+              <button class="btn" type="submit">Go</button>
+              <button class="btn" type="button" id="random">Surprise me</button>
+            </div>
+          </form>
+          <p class="hint" id="coordmsg" style="margin-top:6px">Use 08h55m10.8s or 133.79 for RA, and -7d14m42s or -7.245 for declination.</p>
+        </div>
+        <label class="check"><input type="checkbox" id="cat"> Show where Gaia catalog (2016) placed each star</label>
+        <div class="row"><button class="btn" id="hintbtn" aria-pressed="false" type="button">Show me the mover</button></div>
+        <div class="ctrl">
+          <label for="speed">Playback speed <output id="speedout"></output></label>
+          <input type="range" id="speed" min="1" max="6" step="0.5" value="2.5">
+        </div>
+        <div class="row">
+          <button class="btn" id="copy" type="button">Copy link to this target</button>
+          <span class="hint" id="copymsg"></span>
+        </div>
+      </div>
+    </details>
+
+    <p class="foot" style="margin-top:18px">
+      <b>About the pictures.</b> The sky is simulated from each target's catalog position and measured motion, with eight example dates between mid-2025 and late 2026. The named targets use real positions and motions. The surrounding objects and all spectra are typical shapes, not SPHEREx pixels. To use real cutouts, replace the data layer in <code>js/data.js</code> and the image functions in <code>js/sky.js</code>.
+    </p>
+  </main>
+
+  <div class="tourui" id="tour">
+    <div class="dock">
+      <div class="panel info" style="padding:14px 16px">
+        <div style="min-width:0;flex:1 1 280px">
+          <h2 id="infoname">The solar system</h2>
+          <p id="infotext">Drag to look around, scroll or pinch to zoom, and tap any label to fly there.</p>
+        </div>
+        <div class="tcontrols">
+          <span class="fact" id="infofact">Sizes and distances are not to scale</span>
+          <button class="btn" id="tpause" aria-pressed="false">Pause</button>
+          <label class="check" style="gap:6px">Speed <input type="range" id="tspeed" min="0.2" max="4" step="0.1" value="1"></label>
+          <button class="btn primary" id="treset">Whole system</button>
+        </div>
+      </div>
+      <div class="scroller" id="tchips" aria-label="Fly to"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/space.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
