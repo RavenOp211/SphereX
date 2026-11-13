@@ -1099,7 +1099,6 @@ details.group.collapsible .group-body {
 
 .grid.even {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  top: 100px;
 }
 
 .legend {
