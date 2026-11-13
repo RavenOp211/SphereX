@@ -31,7 +31,7 @@
   <meta name="claude:viewport-fit-sides" content="cover">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Redaction+50&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Redaction+35&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -126,16 +126,16 @@
             <p class="hint">Fainter objects are dimmed so brighter ones stand out.</p>
           </div>
           <details class="group collapsible">
-              <summary class="lbl">Object types</summary>
-                  <div class="group-body">
-                    <div class="row-between">
-                      <span class="hint">Filter visible object classes</span>
-                        <button class="linkbtn" id="classAll" type="button">Show all</button>
-                    </div>
-                      <div class="chips" id="classes"></div>
-                        <label class="check"><input type="checkbox" id="marks" checked> Ring each object in its type colour</label>
-                  </div>
-            </details>
+            <summary class="lbl">Object types</summary>
+            <div class="group-body">
+              <div class="row-between">
+                <span class="hint">Filter visible object classes</span>
+                <button class="linkbtn" id="classAll" type="button">Show all</button>
+              </div>
+              <div class="chips" id="classes"></div>
+              <label class="check"><input type="checkbox" id="marks" checked> Ring each object in its type colour</label>
+            </div>
+          </details>
           <div class="group">
             <label class="lbl" for="fov">Zoom <output id="fovout"></output></label>
             <input type="range" id="fov" min="1" max="15" step="0.5" value="2.5">
@@ -225,6 +225,89 @@
       </div>
     </details>
 
+    <!-- Collapsible Sticky-Note Comment Board -->
+    <details class="panel notes-drawer" id="notesSection" style="margin-top:16px">
+      <summary>
+        <span class="notes-sum-left">
+          <span>Observer field notes &amp; bug board</span>
+          <span class="notes-badge" id="notesCount">3 sticky notes</span>
+        </span>
+      </summary>
+
+      <div class="notes-inner">
+        <p class="notes-intro">Pin a sticky note with your infrared discoveries, unusual spectra, or any glitches you ran into. Attach a screenshot or capture the current sky view directly.</p>
+
+        <div class="notes-layout">
+          <form class="note-form" id="noteForm">
+            <div class="note-form-row">
+              <label class="note-field">
+                <span>Observer name</span>
+                <input type="text" id="noteAuthor" maxlength="36" placeholder="e.g. VegaWatcher" autocomplete="off">
+              </label>
+
+              <div class="note-field">
+                <span>Note type</span>
+                <div class="note-kind-seg" id="noteKindSeg" role="group" aria-label="Note type">
+                  <button type="button" data-kind="finding" aria-pressed="true">Finding</button>
+                  <button type="button" data-kind="problem" aria-pressed="false">Problem</button>
+                </div>
+              </div>
+            </div>
+
+            <label class="note-field">
+              <span>Your note</span>
+              <textarea id="noteText" rows="3" maxlength="340" required placeholder="Share what stood out in this lens or describe an issue you spotted..."></textarea>
+            </label>
+
+            <div class="note-form-footer">
+              <div class="note-tint-picker" role="group" aria-label="Sticky note colour">
+                <span>Paper tint:</span>
+                <button type="button" class="tint-dot" data-tint="cream" aria-pressed="true" title="Champagne Cream" style="background:#efd9ce"></button>
+                <button type="button" class="tint-dot" data-tint="lavender" aria-pressed="false" title="Mist Lavender" style="background:#dec0f1"></button>
+                <button type="button" class="tint-dot" data-tint="wisteria" aria-pressed="false" title="Soft Wisteria" style="background:#b79ced"></button>
+                <button type="button" class="tint-dot" data-tint="iris" aria-pressed="false" title="Pastel Iris" style="background:#a695f5"></button>
+              </div>
+
+              <label class="note-check">
+                <input type="checkbox" id="noteAttachSky" checked>
+                <span>Tag current target &amp; lens</span>
+              </label>
+            </div>
+
+            <div class="note-photo-bar" id="noteDropzone">
+              <input type="file" id="notePhotoInput" accept="image/*" hidden>
+              <button type="button" class="note-btn" id="noteUploadBtn">+ Upload photo</button>
+              <button type="button" class="note-btn" id="noteSnapBtn">Snap sky view</button>
+              <span class="note-photo-hint" id="notePhotoHint">or drop an image here</span>
+            </div>
+
+            <div class="note-preview" id="notePreviewWrap" hidden>
+              <img id="notePreviewImg" alt="Selected attachment preview">
+              <button type="button" class="note-preview-rm" id="notePreviewRm" aria-label="Remove photo">&times;</button>
+            </div>
+
+            <div class="note-submit-row">
+              <button type="submit" class="note-btn primary">Pin sticky note</button>
+              <span class="note-status" id="noteStatus" aria-live="polite"></span>
+            </div>
+          </form>
+
+          <div class="notes-board-wrap">
+            <div class="notes-toolbar">
+              <div class="notes-filters" id="noteFilters" role="group" aria-label="Filter notes">
+                <button type="button" data-filter="all" aria-pressed="true">All notes</button>
+                <button type="button" data-filter="finding" aria-pressed="false">Findings</button>
+                <button type="button" data-filter="problem" aria-pressed="false">Problems</button>
+              </div>
+              <button type="button" class="linkbtn" id="notesResetDemo" title="Restore sample notes">Reset samples</button>
+            </div>
+
+            <div class="notes-grid" id="notesGrid"></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
     <p class="foot" style="margin-top:18px">
       <b>About the pictures.</b> The sky is simulated from each target's catalog position and measured motion, with eight example dates between mid-2025 and late 2026. The named targets use real positions and motions. The surrounding objects and all spectra are typical shapes, not SPHEREx pixels. To use real cutouts, replace the data layer in <code>js/data.js</code> and the image functions in <code>js/sky.js</code>.
     </p>
@@ -246,6 +329,15 @@
       </div>
       <div class="scroller" id="tchips" aria-label="Fly to"></div>
     </div>
+  </div>
+</div>
+
+<!-- Lightbox for inspecting sticky-note photos -->
+<div class="note-lightbox" id="noteLightbox" hidden role="dialog" aria-modal="true" aria-label="Attached photo preview">
+  <div class="note-lightbox-card">
+    <button type="button" class="note-lightbox-close" id="noteLightboxClose" aria-label="Close preview">&times;</button>
+    <img id="noteLightboxImg" alt="Enlarged visitor attachment">
+    <p id="noteLightboxCap"></p>
   </div>
 </div>
 
