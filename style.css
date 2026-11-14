@@ -1706,3 +1706,510 @@ details.group.collapsible .group-body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== Field Guide Tab Styles ==================== */
+body:not(.guide) #guide {
+  display: none;
+}
+
+body.guide #viewer,
+body.guide #tour,
+body.guide #labels {
+  display: none !important;
+}
+
+body.guide #space,
+body.guide .veil {
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+#guide {
+  padding-bottom: 36px;
+}
+
+.guide-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  background:
+    radial-gradient(circle at top right, rgba(149, 127, 239, 0.22), transparent 55%),
+    rgba(22, 18, 46, 0.84);
+}
+
+.guide-eyebrow {
+  display: inline-block;
+  font: 600 11px/1.2 'Orbitron', sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #dec0f1;
+  background: rgba(113, 97, 239, 0.22);
+  border: 1px solid rgba(183, 156, 237, 0.35);
+  padding: 5px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.guide-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(20px, 2.6vw, 28px);
+  line-height: 1.25;
+  color: #efd9ce;
+}
+
+.guide-hero p,
+.guide-lead {
+  margin: 0;
+  font: 15px/1.6 'Redaction 35', Georgia, serif;
+  color: rgba(239, 217, 206, 0.9);
+}
+
+.guide-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.guide-stat {
+  background: rgba(11, 9, 24, 0.62);
+  border: 1px solid rgba(183, 156, 237, 0.24);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.guide-stat strong {
+  display: block;
+  font: 700 15px/1.3 'Orbitron', sans-serif;
+  color: #dec0f1;
+  margin-bottom: 4px;
+}
+
+.guide-stat span {
+  display: block;
+  font: 13px/1.4 'Redaction 35', Georgia, serif;
+  color: rgba(239, 217, 206, 0.78);
+}
+
+.guide-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+  font: 14.5px/1.55 'Redaction 35', Georgia, serif;
+  color: rgba(239, 217, 206, 0.9);
+}
+
+.guide-list strong {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  color: #dec0f1;
+}
+
+.guide-spectrum-bar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.guide-spectrum-bar span {
+  padding: 8px 6px;
+  border-radius: 8px;
+  text-align: center;
+  font: 700 11px/1.25 'Orbitron', sans-serif;
+  color: #0b0918;
+  box-shadow: 0 4px 14px rgba(11, 9, 24, 0.35);
+}
+
+.guide-lens-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.guide-mini-card,
+.guide-filter-item,
+.guide-recipe-card {
+  background: rgba(11, 9, 24, 0.56);
+  border: 1px solid rgba(183, 156, 237, 0.22);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.guide-mini-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #efd9ce;
+}
+
+.guide-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.guide-mini-card p,
+.guide-filter-item p,
+.guide-recipe-card p {
+  margin: 0;
+  font: 14px/1.55 'Redaction 35', Georgia, serif;
+  color: rgba(239, 217, 206, 0.86);
+}
+
+.guide-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.guide-filter-item h3,
+.guide-recipe-card h3 {
+  margin: 0 0 6px;
+  font: 600 14px/1.35 'Orbitron', sans-serif;
+  color: #dec0f1;
+}
+
+.guide-recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.guide-recipe-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.guide-recipe-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(183, 156, 237, 0.55);
+}
+
+.guide-recipe-card .btn {
+  margin-top: auto;
+}
+
+@media (max-width: 860px) {
+  .guide-hero,
+  .guide-lens-grid,
+  .guide-filter-grid,
+  .guide-recipe-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-spectrum-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ==================== Animated Navigation Arrow Callouts ==================== */
+.nav-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.nav-hints {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 6px;
+  pointer-events: none;
+}
+
+.nav-hint {
+  pointer-events: auto;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 5px;
+  font: italic 13px/1.1 'Redaction 35', Georgia, serif;
+  letter-spacing: 0.02em;
+  color: #dec0f1;
+  cursor: pointer;
+  text-shadow: 0 2px 10px rgba(11, 9, 24, 0.95);
+  transition: color 0.2s ease, opacity 0.25s ease, transform 0.2s ease;
+}
+
+.nav-hint:hover {
+  color: #efd9ce;
+}
+
+.nav-hint .nav-arrow {
+  color: #957fef;
+  filter: drop-shadow(0 0 6px rgba(149, 127, 239, 0.55));
+  transition: color 0.2s ease, filter 0.2s ease;
+}
+
+.nav-hint:hover .nav-arrow {
+  color: #efd9ce;
+  filter: drop-shadow(0 0 8px rgba(239, 217, 206, 0.65));
+}
+
+.nav-hint-explore .nav-arrow {
+  animation: nudgeUpRight 2.2s ease-in-out infinite;
+}
+
+.nav-hint-guide .nav-arrow {
+  animation: nudgeUpLeft 2.2s ease-in-out infinite;
+}
+
+/* Soften each hint while its destination tab is already open */
+body:not(.tour):not(.guide) .nav-hint-explore,
+body.guide .nav-hint-guide {
+  opacity: 0.45;
+}
+
+@keyframes nudgeUpRight {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(2.5px, -2.5px);
+  }
+}
+
+@keyframes nudgeUpLeft {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-2.5px, -2.5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-hint-explore .nav-arrow,
+  .nav-hint-guide .nav-arrow {
+    animation: none;
+  }
+}
+
+/* ==================== Space Tour Top-Left Fun Fact Card (afraid-lionfish-0 style) ==================== */
+.tour-fact-slot {
+  position: relative;
+  z-index: 6;
+  width: min(330px, calc(100vw - 32px));
+  margin-top: 6px;
+  pointer-events: auto;
+}
+
+.lionfish-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 15px 16px 14px;
+  background: linear-gradient(155deg, rgba(20, 16, 44, 0.78), rgba(11, 9, 24, 0.86));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 14px 34px rgba(5, 4, 14, 0.72),
+    inset 0 1px 0 rgba(239, 217, 206, 0.14);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s ease;
+  overflow: hidden;
+}
+
+/* Luminous gradient border ring */
+.lionfish-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(239, 217, 206, 0.42),
+    rgba(183, 156, 237, 0.22) 45%,
+    rgba(113, 97, 239, 0.55)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.78;
+  transition: opacity 0.32s ease;
+}
+
+/* Subtle top-right violet ambient glow on hover */
+.lionfish-card::after {
+  content: '';
+  position: absolute;
+  top: -45px;
+  right: -45px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(149, 127, 239, 0.28), transparent 70%);
+  pointer-events: none;
+  opacity: 0.45;
+  transition: opacity 0.32s ease, transform 0.32s ease;
+}
+
+.lionfish-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 20px 42px rgba(5, 4, 14, 0.82),
+    0 0 28px rgba(113, 97, 239, 0.28);
+}
+
+.lionfish-card:hover::before {
+  opacity: 1;
+}
+
+.lionfish-card:hover::after {
+  opacity: 0.95;
+  transform: scale(1.15);
+}
+
+.lionfish-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lionfish-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: 700 10px/1.2 'Orbitron', sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #0b0918;
+  background: linear-gradient(135deg, #efd9ce, #dec0f1);
+  box-shadow: 0 3px 10px rgba(222, 192, 241, 0.25);
+}
+
+.lionfish-badge[data-cat="Planets"] {
+  background: linear-gradient(135deg, #dec0f1, #b79ced);
+}
+
+.lionfish-badge[data-cat="Deep Space"] {
+  background: linear-gradient(135deg, #b79ced, #957fef);
+  color: #0b0918;
+}
+
+.lionfish-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lionfish-counter {
+  font: 12px/1 'Redaction 35', Georgia, serif;
+  color: rgba(239, 217, 206, 0.65);
+}
+
+.lionfish-min {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(183, 156, 237, 0.3);
+  background: rgba(11, 9, 24, 0.65);
+  color: #dec0f1;
+  font: 700 14px/1 'Orbitron', sans-serif;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.lionfish-min:hover {
+  background: rgba(113, 97, 239, 0.32);
+  border-color: #efd9ce;
+  color: #efd9ce;
+}
+
+.lionfish-body {
+  margin-top: 11px;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.lionfish-body.swapping {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.lionfish-card.is-collapsed .lionfish-body {
+  display: none;
+}
+
+.lionfish-title {
+  margin: 0 0 6px;
+  font: 600 13.5px/1.35 'Orbitron', sans-serif;
+  letter-spacing: 0.02em;
+  color: #efd9ce;
+}
+
+.lionfish-text {
+  margin: 0;
+  font: 14px/1.55 'Redaction 35', Georgia, serif;
+  color: rgba(239, 217, 206, 0.88);
+}
+
+.lionfish-foot {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(183, 156, 237, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lionfish-hint {
+  font: italic 11.5px/1.2 'Redaction 35', Georgia, serif;
+  color: rgba(222, 192, 241, 0.65);
+}
+
+.lionfish-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(183, 156, 237, 0.42);
+  background: rgba(113, 97, 239, 0.22);
+  color: #efd9ce;
+  font: 600 11px/1 'Orbitron', sans-serif;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.lionfish-btn:hover {
+  background: linear-gradient(135deg, #957fef, #7161ef);
+  border-color: #efd9ce;
+  color: #0b0918;
+  box-shadow: 0 4px 14px rgba(113, 97, 239, 0.45);
+}
+
+.lionfish-btn:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 640px) {
+  .tour-fact-slot {
+    width: 100%;
+  }
+}

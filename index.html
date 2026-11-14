@@ -27,18 +27,18 @@
       display: none !important;
     }
   </style>
-  <title>AstroBlip</title>
+  <title>SPHEREx Sky Watch</title>
   <meta name="claude:viewport-fit-sides" content="cover">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Redaction+35&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="tour">
 
 <canvas id="space" aria-label="Interactive 3D solar system"></canvas>
 <div class="veil"></div>
-<div class="labels" id="labels" hidden></div>
+<div class="labels" id="labels"></div>
 
 <div class="wrap">
   <header class="top">
@@ -50,12 +50,35 @@
       </svg>
       SPHEREx Sky Watch
     </div>
-    <div class="tabs" role="tablist" aria-label="Views">
-      <button role="tab" id="tab-viewer" aria-selected="true" aria-controls="viewer">Sky Lab</button>
-      <button role="tab" id="tab-tour" aria-selected="false" aria-controls="tour">Space tour</button>
+
+    <div class="nav-wrap">
+      <div class="tabs" role="tablist" aria-label="Views">
+        <button role="tab" id="tab-viewer" aria-selected="false" aria-controls="viewer">Sky lab</button>
+        <button role="tab" id="tab-tour" aria-selected="true" aria-controls="tour">Space tour</button>
+        <button role="tab" id="tab-guide" aria-selected="false" aria-controls="guide">Field guide</button>
+      </div>
+
+      <div class="nav-hints">
+        <button type="button" class="nav-hint nav-hint-explore" onclick="document.getElementById('tab-viewer').click()" title="Open Sky lab to explore infrared targets">
+          <svg class="nav-arrow" width="26" height="22" viewBox="0 0 26 22" fill="none" aria-hidden="true">
+            <path d="M3 19C5 11 11 6 21 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M16 1.8L22 3.8L17.8 8.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Explore</span>
+        </button>
+
+        <button type="button" class="nav-hint nav-hint-guide" onclick="document.getElementById('tab-guide').click()" title="Open Field guide for navigation and filter help">
+          <span>Need Guidance?</span>
+          <svg class="nav-arrow" width="26" height="22" viewBox="0 0 26 22" fill="none" aria-hidden="true">
+            <path d="M23 19C21 11 15 6 5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M10 1.8L4 3.8L8.2 8.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- ==================== TAB 1: SKY LAB ==================== -->
   <main id="viewer">
     <section class="intro" style="margin-bottom:18px">
       <h1>Sort the sky by colour and brightness</h1>
@@ -313,7 +336,35 @@
     </p>
   </main>
 
+  <!-- ==================== TAB 2: SPACE TOUR ==================== -->
   <div class="tourui" id="tour">
+    <aside class="tour-fact-slot" aria-label="Random space and SPHEREx fun facts">
+      <div class="lionfish-card" id="tourFactCard">
+        <div class="lionfish-head">
+          <span class="lionfish-badge" id="tourFactTag">SPHEREx</span>
+          <div class="lionfish-actions">
+            <span class="lionfish-counter" id="tourFactCount">1 / 18</span>
+            <button type="button" class="lionfish-min" id="tourFactMin" aria-expanded="true" title="Minimize or expand fact card">&minus;</button>
+          </div>
+        </div>
+
+        <div class="lionfish-body" id="tourFactBody">
+          <h3 class="lionfish-title" id="tourFactTitle">102 Infrared Colours</h3>
+          <p class="lionfish-text" id="tourFactText">SPHEREx sees the entire sky in 102 near-infrared wavelengths, creating the most colourful all-sky spectral map ever assembled.</p>
+
+          <div class="lionfish-foot">
+            <span class="lionfish-hint">Hover to pause · Cosmic log</span>
+            <button type="button" class="lionfish-btn" id="tourFactNext">
+              <span>Next fact</span>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M13.5 8A5.5 5.5 0 1 1 11.9 4.1M13.5 2.5V5.2H10.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
     <div class="dock">
       <div class="panel info" style="padding:14px 16px">
         <div style="min-width:0;flex:1 1 280px">
@@ -330,6 +381,166 @@
       <div class="scroller" id="tchips" aria-label="Fly to"></div>
     </div>
   </div>
+
+  <!-- ==================== TAB 3: KID-FRIENDLY FIELD GUIDE ==================== -->
+  <section id="guide" aria-label="Easy website guide">
+    <section class="panel guide-hero">
+      <div class="guide-hero-copy">
+        <span class="guide-eyebrow">Junior Space Explorer Manual</span>
+        <h1>How to explore SPHEREx in 3 easy steps</h1>
+        <p>Think of this website like a giant spaceship cockpit! You can fly around our planets in 3D, or peek through a magic rainbow telescope that sees invisible heat in space.</p>
+        <div class="row" style="margin-top:14px">
+          <button type="button" class="btn primary" data-go-view="viewer">Go to Sky lab</button>
+          <button type="button" class="btn" data-go-view="tour">Fly in Space tour</button>
+        </div>
+      </div>
+
+      <div class="guide-hero-stats">
+        <div class="guide-stat">
+          <strong>1. Fly Around</strong>
+          <span>Use <b>Space tour</b> to visit planets in 3D</span>
+        </div>
+        <div class="guide-stat">
+          <strong>2. Switch Lenses</strong>
+          <span>Use <b>Sky lab</b> to spot hidden heat</span>
+        </div>
+        <div class="guide-stat">
+          <strong>3. Click Dots</strong>
+          <span>Tap any star to learn its secret story</span>
+        </div>
+        <div class="guide-stat">
+          <strong>4. Pin Notes</strong>
+          <span>Save cool findings on the sticky board</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 1 & 2: How to move around -->
+    <div class="grid even" style="margin-top:16px">
+      <article class="panel guide-card">
+        <div class="step"><i>1</i>Flying in Space tour</div>
+        <p class="guide-lead">This is the 3D Solar System screen you see when the site first opens.</p>
+        <ul class="guide-list">
+          <li><strong>Look Around:</strong> Click and drag anywhere on the screen to spin around the Sun.</li>
+          <li><strong>Zoom Closer:</strong> Scroll your mouse wheel (or pinch with two fingers) to zoom right up to a planet.</li>
+          <li><strong>Blast Off:</strong> Tap any floating name—or a button at the bottom—to fly straight to that planet!</li>
+        </ul>
+      </article>
+
+      <article class="panel guide-card">
+        <div class="step"><i>2</i>Using the Sky lab</div>
+        <p class="guide-lead">Click <b>Sky lab</b> at the top to look through SPHEREx's special space telescope.</p>
+        <ul class="guide-list">
+          <li><strong>Pick a Spot:</strong> Choose a target button at the top (like <b>Barnard's Star</b>) to point the telescope.</li>
+          <li><strong>Press Play:</strong> Hit the round Play button under the sky picture to watch stars move across time!</li>
+          <li><strong>Tap Any Dot:</strong> Click any glowing dot in the picture to see what it is and how fast it travels.</li>
+        </ul>
+      </article>
+    </div>
+
+    <!-- Step 3: Rainbow Lenses -->
+    <section class="panel" style="margin-top:16px" aria-label="Magic rainbow lenses">
+      <div class="step"><i>3</i>What do the 6 Lenses do?</div>
+      <p class="guide-lead">Human eyes can only see normal light, but SPHEREx sees <b>infrared heat</b>! Slide through Lenses 1 to 6 to make different space objects glow.</p>
+
+      <div class="guide-spectrum-bar" aria-hidden="true">
+        <span style="background:#7161ef">Lens 1</span>
+        <span style="background:#8470f2">Lens 2</span>
+        <span style="background:#957fef">Lens 3</span>
+        <span style="background:#b79ced">Lens 4</span>
+        <span style="background:#dec0f1">Lens 5</span>
+        <span style="background:#efd9ce">Lens 6</span>
+      </div>
+
+      <div class="guide-lens-grid">
+        <div class="guide-mini-card">
+          <div class="guide-mini-head">
+            <span class="guide-dot" style="background:#7161ef"></span>
+            <strong>Lenses 1 &amp; 2 · Bright Stars</strong>
+          </div>
+          <p>Great for spotting normal hot stars. The sky looks full and sparkly here!</p>
+        </div>
+
+        <div class="guide-mini-card">
+          <div class="guide-mini-head">
+            <span class="guide-dot" style="background:#957fef"></span>
+            <strong>Lenses 3 &amp; 4 · Galaxies &amp; Ice</strong>
+          </div>
+          <p>Great for finding faraway swirling galaxies and giant clouds of frozen water in space.</p>
+        </div>
+
+        <div class="guide-mini-card">
+          <div class="guide-mini-head">
+            <span class="guide-dot" style="background:#efd9ce"></span>
+            <strong>Lenses 5 &amp; 6 · Cold Hidden Worlds</strong>
+          </div>
+          <p>Bright stars fade away here, so chilly brown dwarfs and space rocks finally pop out!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: Handy Buttons -->
+    <section class="panel" style="margin-top:16px" aria-label="Easy filter guide">
+      <div class="step"><i>4</i>What do the buttons in Sky lab do?</div>
+      <div class="guide-filter-grid">
+        <div class="guide-filter-item">
+          <h3>Colour mix</h3>
+          <p>Paints invisible heat in bright rainbow colours—hot stars look blue and cool objects glow red.</p>
+        </div>
+
+        <div class="guide-filter-item">
+          <h3>Spot change</h3>
+          <p>Hides all the still stars so only blinking stars and moving space rocks stay visible.</p>
+        </div>
+
+        <div class="guide-filter-item">
+          <h3>Trails</h3>
+          <p>Connects all 8 pictures together into dotted lines so you can see fast stars zooming across space.</p>
+        </div>
+
+        <div class="guide-filter-item">
+          <h3>Brightness &amp; Zoom</h3>
+          <p>Turn up <b>Brightness boost</b> to see super-faint galaxies, or slide <b>Zoom</b> out to see a wider patch of sky.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 5: One-Click Missions -->
+    <section class="panel" style="margin-top:16px" aria-label="Fun space missions">
+      <div class="step"><i>5</i>Try a 1-click space mission!</div>
+      <p class="guide-lead">Want us to set up the telescope for you? Tap any mission button below and watch it work!</p>
+
+      <div class="guide-recipe-grid">
+        <div class="guide-recipe-card">
+          <span class="pill">Mission 1</span>
+          <h3>Find a chilly brown dwarf</h3>
+          <p>Jumps to <b>WISE 0855</b> and turns on Lens 6 so a cold, dark star-like world glows brightly.</p>
+          <button type="button" class="btn primary" data-recipe="brown-dwarf">Try this mission &rarr;</button>
+        </div>
+
+        <div class="guide-recipe-card">
+          <span class="pill">Mission 2</span>
+          <h3>Spot a speeding star</h3>
+          <p>Jumps to <b>Barnard's Star</b> and turns on <b>Trails</b> so you can see its dotted path across the sky.</p>
+          <button type="button" class="btn primary" data-recipe="fast-mover">Try this mission &rarr;</button>
+        </div>
+
+        <div class="guide-recipe-card">
+          <span class="pill">Mission 3</span>
+          <h3>Catch a blinking giant star</h3>
+          <p>Jumps to <b>R Draconis</b> and turns on <b>Spot change</b> so you can watch it pulse brighter and dimmer.</p>
+          <button type="button" class="btn primary" data-recipe="variable-star">Try this mission &rarr;</button>
+        </div>
+
+        <div class="guide-recipe-card">
+          <span class="pill">Mission 4</span>
+          <h3>Zoom out to find a twin star</h3>
+          <p>Jumps to <b>Epsilon Indi B</b> and zooms way out in rainbow colours to reveal its bright partner.</p>
+          <button type="button" class="btn primary" data-recipe="wide-binary">Try this mission &rarr;</button>
+        </div>
+      </div>
+    </section>
+  </section>
 </div>
 
 <!-- Lightbox for inspecting sticky-note photos -->
