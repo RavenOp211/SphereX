@@ -1,5 +1,6 @@
-/* DATA LAYER: object classes, simulated spectra, targets, catalog generator.
-   To use real SPHEREx data, replace TARGETS/addField and the flux functions in sky.js. */
+/* DATA LAYER: object classes, simulated spectra, targets, catalog generator, and live NASA SPHEREx DR1 loader. */
+
+const BACKEND_URL = 'http://127.0.0.1:5000';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -78,13 +79,13 @@ const NE = EPOCHS.length;
 
 /* Object classes used for sorting and filtering */
 const CLASSES = {
-  star:  { label: 'Stars', col: '#8fb8ff' },
-  red:   { label: 'Red dwarfs', col: '#ff9a6b' },
-  bd:    { label: 'Brown dwarfs', col: '#ff5fa2' },
+  star: { label: 'Stars', col: '#8fb8ff' },
+  red: { label: 'Red dwarfs', col: '#ff9a6b' },
+  bd: { label: 'Brown dwarfs', col: '#ff5fa2' },
   giant: { label: 'Giants and variables', col: '#ffd166' },
   young: { label: 'Young stars', col: '#6fe0a8' },
-  gal:   { label: 'Galaxies', col: '#c79bff' },
-  qso:   { label: 'Quasars', col: '#72d6ff' },
+  gal: { label: 'Galaxies', col: '#c79bff' },
+  qso: { label: 'Quasars', col: '#72d6ff' },
   mover: { label: 'Asteroids and comets', col: '#ff7a3d' }
 };
 
@@ -94,16 +95,16 @@ const CLS_KEYS = Object.keys(CLASSES);
 const g = (l, c, w) => Math.exp(-((l - c) * (l - c)) / (2 * w * w));
 
 const SPEC = {
-  hot:    (l) => 1.0 * Math.pow(1.25 / l, 2.0),
-  star:   (l) => 0.9 * Math.pow(1.25 / l, 1.5),
-  red:    (l) => 0.85 * Math.pow(1.25 / l, 1.1) + 0.08 * g(l, 1.6, 0.15),
+  hot: (l) => 1.0 * Math.pow(1.25 / l, 2.0),
+  star: (l) => 0.9 * Math.pow(1.25 / l, 1.5),
+  red: (l) => 0.85 * Math.pow(1.25 / l, 1.1) + 0.08 * g(l, 1.6, 0.15),
   tdwarf: (l) => 0.05 + 0.9 * g(l, 1.27, 0.13) + 0.5 * g(l, 1.6, 0.1) + 0.55 * g(l, 4.1, 0.4),
   ydwarf: (l) => 0.003 + 0.02 * g(l, 1.2, 0.1) + 1.0 * g(l, 4.5, 0.5),
-  mira:   (l) => Math.max(0.03, 0.2 + 0.9 * g(l, 2.0, 0.8) + 0.5 * g(l, 4.3, 0.7) - 0.25 * g(l, 2.7, 0.25)),
-  yso:    (l) => 0.25 + 0.5 * g(l, 1.3, 0.5) + 0.22 * l,
-  gal:    (l) => 0.12 + 0.8 * g(l, 1.6, 0.9) + 0.3 * g(l, 3.3, 0.2),
-  qso:    (l) => 0.25 * Math.pow(l / 1.25, 0.9),
-  ast:    (l) => 0.35 + 0.12 * l + 0.5 / (1 + Math.exp(-(l - 3.6) * 2.2))
+  mira: (l) => Math.max(0.03, 0.2 + 0.9 * g(l, 2.0, 0.8) + 0.5 * g(l, 4.3, 0.7) - 0.25 * g(l, 2.7, 0.25)),
+  yso: (l) => 0.25 + 0.5 * g(l, 1.3, 0.5) + 0.22 * l,
+  gal: (l) => 0.12 + 0.8 * g(l, 1.6, 0.9) + 0.3 * g(l, 3.3, 0.2),
+  qso: (l) => 0.25 * Math.pow(l / 1.25, 0.9),
+  ast: (l) => 0.35 + 0.12 * l + 0.5 / (1 + Math.exp(-(l - 3.6) * 2.2))
 };
 
 /* What each spectrum type means, shown in the details card */
@@ -162,7 +163,12 @@ const KINDS = {
 
 /* Colour = log10( flux at 4.5 µm / flux at 1.25 µm ); negative is blue, positive is red */
 const colorIndex = (s) => {
-  const sp = SPEC[s.type];
+  if (Array.isArray(s.spec) && s.spec.length >= 102) {
+    const f125 = Math.max(1e-4, s.spec[22] || 0.01);
+    const f450 = Math.max(1e-4, s.spec[88] || 0.01);
+    return Math.log10(f450 / f125);
+  }
+  const sp = SPEC[s.type] || SPEC.star;
   return Math.log10((sp(4.5) + 1e-4) / (sp(1.25) + 1e-4)) + (s.cj || 0);
 };
 
@@ -170,6 +176,18 @@ const R2 = mulberry(77);
 const irreg = Array.from({ length: NE }, () => 0.35 + 0.65 * R2());
 
 const TARGETS = [
+  {
+    id: 'nasa-cosmos',
+    name: 'NASA Live (COSMOS)',
+    ra: '10h00m00.0s',
+    dec: '+02d00m00s',
+    ra0: 150.0,
+    dec0: 2.0,
+    fov: 3,
+    isLiveNasa: true,
+    tip: '<b>Live NASA SPHEREx DR1 pixels</b> fetched directly from NASA/IPAC IRSA at RA 150.0°, Dec +2.0°. Use <b>Spot change</b>, <b>Brightness boost</b>, or click any detected source.',
+    srcs: []
+  },
   {
     id: 'barnards-star',
     name: "Barnard's Star",
@@ -342,8 +360,8 @@ function fmtDec(d) {
 }
 
 TARGETS.forEach((T) => {
-  T.ra0 = parseRA(T.ra);
-  T.dec0 = parseDec(T.dec);
+  if (T.ra0 == null) T.ra0 = parseRA(T.ra);
+  if (T.dec0 == null) T.dec0 = parseDec(T.dec);
 });
 
 const desig = (T, s) => {
@@ -362,6 +380,7 @@ const desig = (T, s) => {
 
 /* Simulated background field around each target: a mix of every object class */
 function addField(T) {
+  if (T.isLiveNasa) return;
   const r = mulberry(hashStr(T.id) + 11);
   const R = 450;
   const mix = [
@@ -496,6 +515,67 @@ function makeCustom(ra, dec) {
 
   addField(T);
   return T;
+}
+
+/* ---- Live NASA SPHEREx DR1 API Bridge ---- */
+const nasaCache = new Map();
+
+async function fetchLiveSpherexPatch(raDeg, decDeg, fovArcmin = 3) {
+  const key = `${raDeg.toFixed(4)}|${decDeg.toFixed(4)}|${fovArcmin}`;
+  if (nasaCache.has(key)) return nasaCache.get(key);
+
+  const url = `${BACKEND_URL}/api/spherex?ra=${encodeURIComponent(raDeg)}&dec=${encodeURIComponent(decDeg)}&fov=${encodeURIComponent(fovArcmin)}&max_epochs=${NE}`;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    let errMsg = `HTTP ${resp.status}`;
+    try {
+      const errJson = await resp.json();
+      if (errJson.error) errMsg = errJson.error;
+    } catch (_) { }
+    throw new Error(errMsg);
+  }
+
+  const payload = await resp.json();
+  if (!payload.epochs || !payload.epochs.length) {
+    throw new Error('No SPHEREx DR1 exposures returned');
+  }
+
+  const realEpochs = payload.epochs.map((ep) => {
+    const arr = new Float32Array(N * N);
+    if (Array.isArray(ep.pixels)) {
+      const len = Math.min(arr.length, ep.pixels.length);
+      for (let i = 0; i < len; i++) {
+        arr[i] = ep.pixels[i];
+      }
+    }
+    return {
+      date: ep.date || '2025-06-01',
+      mjd: ep.mjd_date || 0,
+      wavelength_um: ep.wavelength_um || 2.0,
+      band_index: ep.band_index ?? 0,
+      lens_index: ep.lens_index ?? 0,
+      obs_id: ep.obs_id || 'SPHEREx-DR1',
+      pixels: arr
+    };
+  });
+
+  const liveTarget = {
+    id: `nasa-${raDeg.toFixed(3)}-${decDeg.toFixed(3)}`,
+    name: `NASA DR1 (${raDeg.toFixed(2)}°, ${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(2)}°)`,
+    ra: fmtRA(raDeg),
+    dec: fmtDec(decDeg),
+    ra0: raDeg,
+    dec0: decDeg,
+    fov: fovArcmin,
+    isLiveNasa: true,
+    realEpochs,
+    totalObservations: payload.total_observations || realEpochs.length,
+    tip: `<b>Real NASA SPHEREx DR1 data</b> (${payload.total_observations} observations found on IRSA, showing ${realEpochs.length} reprojected epochs). Click any detected source or toggle <b>Spot change</b>.`,
+    srcs: Array.isArray(payload.srcs) ? payload.srcs : []
+  };
+
+  nasaCache.set(key, liveTarget);
+  return liveTarget;
 }
 
 TARGETS.forEach(addField);

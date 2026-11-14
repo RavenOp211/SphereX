@@ -1,4 +1,4 @@
-/* Sky viewer: image renderer, Object Lab controls, details card, sorted list, colour map. Needs data.js. */
+/* Sky viewer: image renderer (simulated + real NASA SPHEREx DR1 pixels), Object Lab controls, details card, sorted list, colour map. Needs data.js. */
 
 const N = 256;
 const SZ = 640;
@@ -35,6 +35,17 @@ const frameCache = new Map();
 const noiseCache = new Map();
 const invalidate = () => frameCache.clear();
 
+/* ---- active epoch count & dates (supports both 8-epoch sim and live NASA epoch counts) ---- */
+const activeEpochCount = () =>
+  S.T && S.T.realEpochs && S.T.realEpochs.length ? S.T.realEpochs.length : NE;
+
+const activeEpochDate = (e) => {
+  if (S.T && S.T.realEpochs && S.T.realEpochs[e]) {
+    return S.T.realEpochs[e].date;
+  }
+  return EPOCHS[e] || EPOCHS[0];
+};
+
 /* ---- physics-ish helpers ---- */
 const curLam = () => (S.lens === 'all' ? null : bandLam(S.lens, S.band));
 const noiseLevel = (lam) => (lam == null ? 0.006 : 0.014);
@@ -42,9 +53,19 @@ const thrVal = () => 0.004 * Math.pow(10, (S.thr / 100) * 2.1);
 const gainF = () => Math.pow(10, S.gain);
 
 function fluxAt(s, e, lam) {
-  const sp = SPEC[s.type];
-  const v = s.vr ? s.vr[e] : 1;
+  const v = s.vr ? s.vr[e % s.vr.length] : 1;
 
+  if (Array.isArray(s.spec) && s.spec.length >= 102) {
+    if (lam == null) {
+      let sum = 0;
+      for (let i = 0; i < 102; i++) sum += s.spec[i] || 0;
+      return (v * sum) / 102;
+    }
+    const idx = Math.min(101, Math.max(0, S.lens * 17 + S.band));
+    return v * (s.spec[idx] ?? 0);
+  }
+
+  const sp = SPEC[s.type] || SPEC.star;
   if (lam == null) {
     let a = 0;
     for (let i = 0; i < 6; i++) {
@@ -56,7 +77,8 @@ function fluxAt(s, e, lam) {
 }
 
 const pos = (s, e) => {
-  const t = EY[e] - TMID;
+  const yr = EY[e % EY.length] ?? TMID;
+  const t = yr - TMID;
   return [s.dx + s.pm[0] * t, s.dy + s.pm[1] * t];
 };
 
@@ -79,7 +101,7 @@ function skyPos(s, e) {
   ];
 }
 
-/* ---- image synthesis ---- */
+/* ---- image synthesis & real NASA FITS pixel bridge ---- */
 function noiseFor(e, ch) {
   const key = [S.T.id, S.fov, e, ch].join('|');
   let a = noiseCache.get(key);
@@ -99,10 +121,34 @@ function noiseFor(e, ch) {
 }
 
 function render(e, lam, ch) {
-  const key = e + '|' + lam + '|' + ch;
+  const key = S.T.id + '|' + e + '|' + lam + '|' + ch;
   let img = frameCache.get(key);
   if (img) return img;
 
+  /* Use real reprojected NASA SPHEREx DR1 pixels when loaded */
+  if (S.T.realEpochs && S.T.realEpochs.length) {
+    const ep = S.T.realEpochs[e % S.T.realEpochs.length];
+    const base = ep.pixels;
+    img = new Float32Array(N * N);
+
+    /* Modulate real pixel intensity slightly when inspecting specific wavelengths vs broadband */
+    let bandScale = 0.32;
+    if (lam != null) {
+      const dist = Math.abs(lam - (ep.wavelength_um || 2.0));
+      bandScale = 0.24 + 0.16 * Math.exp(-(dist * dist) / 1.5);
+    }
+    if (ch === 1) bandScale *= 1.12;
+    if (ch === 3) bandScale *= 0.88;
+
+    for (let i = 0; i < N * N; i++) {
+      img[i] = base[i] * bandScale;
+    }
+
+    frameCache.set(key, img);
+    return img;
+  }
+
+  /* Fallback procedural simulation */
   const nz = noiseFor(e, ch);
   const lv = noiseLevel(lam);
   img = new Float32Array(N * N);
@@ -152,7 +198,10 @@ function render(e, lam, ch) {
 const COLOR_LAMS = [4.7, 2.9, 1.25];
 
 function paint() {
+  const nEp = activeEpochCount();
+  if (S.e >= nEp) S.e = 0;
   const e = S.e;
+
   const im = octx.createImageData(N, N);
   const d = im.data;
   const G = gainF() * 14;
@@ -394,38 +443,52 @@ function overlays() {
 
 function meta() {
   const e = S.e;
-  const r = mulberry(hashStr(S.T.id + e + 'f'))();
-  const flag =
-    r < 0.12
-      ? ['Cosmic-ray hit', 'warn']
-      : r < 0.2
-      ? ['Bright-star glare nearby', 'warn']
-      : ['Clean', 'ok'];
+  const nEp = activeEpochCount();
+  const isLive = !!(S.T && S.T.realEpochs && S.T.realEpochs.length);
+
+  let flag;
+  if (isLive) {
+    const ep = S.T.realEpochs[e];
+    flag = [`NASA SPHEREx DR1 (${ep.wavelength_um.toFixed(2)} µm)`, 'ok'];
+  } else {
+    const r = mulberry(hashStr(S.T.id + e + 'f'))();
+    flag =
+      r < 0.12
+        ? ['Cosmic-ray hit', 'warn']
+        : r < 0.2
+          ? ['Bright-star glare nearby', 'warn']
+          : ['Clean', 'ok'];
+  }
 
   const lens =
     S.mode === 'color'
       ? 'Colour mix: 4.7, 2.9 and 1.25 µm as red, green, blue'
       : S.lens === 'all'
-      ? 'All 6 lenses added together'
-      : `Lens ${S.lens + 1} · band ${S.lens * 17 + S.band + 1} of 102 · ${curLam().toFixed(2)} µm`;
+        ? 'All 6 lenses added together'
+        : `Lens ${S.lens + 1} · band ${S.lens * 17 + S.band + 1} of 102 · ${curLam().toFixed(2)} µm`;
 
-  $('#meta').innerHTML = `<span>${EPOCHS[e]}</span><span>${lens}</span><span class="${flag[1]}">Quality: ${flag[0]}</span>`;
-  $('#badge').textContent = `Picture ${e + 1} of ${NE}`;
-  $('#frame').value = e;
+  $('#meta').innerHTML = `<span>${activeEpochDate(e)}</span><span>${lens}</span><span class="${flag[1]}">${isLive ? 'Source' : 'Quality'}: ${flag[0]}</span>`;
+  $('#badge').textContent = `Picture ${e + 1} of ${nEp}`;
+
+  const frameEl = $('#frame');
+  frameEl.max = Math.max(0, nEp - 1);
+  frameEl.value = e;
+  $('#d0').textContent = activeEpochDate(0);
+  $('#d1').textContent = activeEpochDate(nEp - 1);
 }
 
 /* ---- details card ---- */
 const dirName = (a) =>
   ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][
-    Math.round(a / 45) % 8
+  Math.round(a / 45) % 8
   ];
 
 const fmtDist = (s) =>
   s.dist == null
     ? 'Not listed'
     : s.bg
-    ? `about ${s.dist.toLocaleString()} light-years (simulated)`
-    : `${s.dist > 100 ? 'about ' : ''}${s.dist.toLocaleString()} light-years`;
+      ? `about ${s.dist.toLocaleString()} light-years (simulated)`
+      : `${s.dist > 100 ? 'about ' : ''}${s.dist.toLocaleString()} light-years`;
 
 let detSig = '';
 
@@ -457,8 +520,9 @@ function updateDetails(force) {
   empty.hidden = true;
   body.hidden = false;
 
-  const k = KINDS[s.type];
+  const k = KINDS[s.type] || KINDS.star;
   const e = S.e;
+  const nEp = activeEpochCount();
   const lam = curLam();
   const [ra, dec] = skyPos(s, e);
   const fx = fluxAt(s, e, lam);
@@ -471,7 +535,7 @@ function updateDetails(force) {
   if (s.vr) {
     const mn = Math.min(...s.vr);
     const mx = Math.max(...s.vr);
-    varTxt = `Varies by ${Math.round((1 - mn / mx) * 100)}% across the ${NE} pictures`;
+    varTxt = `Varies by ${Math.round((1 - mn / mx) * 100)}% across the ${nEp} pictures`;
   }
 
   const rows = [
@@ -491,7 +555,7 @@ function updateDetails(force) {
     ],
     ['Colour', `${colourWord(ci)} (${ci >= 0 ? '+' : ''}${ci.toFixed(2)})`],
     ['Variability', varTxt],
-    ['Seen in', `Picture ${e + 1} of ${NE}, ${EPOCHS[e]}`]
+    ['Seen in', `Picture ${e + 1} of ${nEp}, ${activeEpochDate(e)}`]
   ];
 
   $('#facts').innerHTML = rows
@@ -554,15 +618,16 @@ function drawSpec() {
   const r = mulberry(hashStr(s.id + S.e));
   const pts = [];
   let mx = 0.05;
+  const hasRealSpec = Array.isArray(s.spec) && s.spec.length >= 102;
 
   for (let i = 0; i < 102; i++) {
     const a = Math.floor(i / 17);
     const j = i % 17;
     const l = bandLam(a, j);
-    const v = Math.max(
-      0,
-      s.b * (s.vr ? s.vr[S.e] : 1) * SPEC[s.type](l) + gauss(r) * 0.012
-    );
+    const vr = s.vr ? s.vr[S.e % s.vr.length] : 1;
+    const v = hasRealSpec
+      ? Math.max(0, vr * (s.spec[i] || 0))
+      : Math.max(0, s.b * vr * (SPEC[s.type] || SPEC.star)(l) + gauss(r) * 0.012);
     pts.push([l, v, a]);
     mx = Math.max(mx, v);
   }
@@ -685,11 +750,11 @@ function updateList(force) {
   $('#listInfo').textContent = `${vis.length} of ${S.T.srcs.length} objects match and are detected. Top ${top.length} by ${K.lab.toLowerCase()}:`;
   $('#list').innerHTML = top.length
     ? top
-        .map(
-          ([s, v]) =>
-            `<button type="button" class="li${S.sel === s ? ' on' : ''}" data-id="${s.id}"><span class="dot" style="background:${CLASSES[s.cls].col}"></span><span class="nm">${s.n}</span><span class="v">${K.show(v)}</span></button>`
-        )
-        .join('')
+      .map(
+        ([s, v]) =>
+          `<button type="button" class="li${S.sel === s ? ' on' : ''}" data-id="${s.id}"><span class="dot" style="background:${CLASSES[s.cls].col}"></span><span class="nm">${s.n}</span><span class="v">${K.show(v)}</span></button>`
+      )
+      .join('')
     : '<p class="hint">Nothing matches. Turn on more object types or lower the brightness cut.</p>';
 }
 
@@ -1138,7 +1203,7 @@ function buildUI() {
     go(
       Math.random() * 360,
       (Math.asin(Math.random() * 2 - 1) * 180) / Math.PI,
-      'A random patch. Zoom out, pick Spot change, and find the mover.'
+      'Querying NASA IRSA at random coordinates...'
     );
 
   $('#copy').onclick = async () => {
@@ -1162,11 +1227,11 @@ function setPlayIcon() {
     : '<path d="M5 3l12 7-12 7z" fill="currentColor"/>';
 }
 
-function setTarget(T, push) {
+async function setTarget(T, push) {
   S.T = T;
   S.fov = T.fov || 3;
   S.e = 0;
-  S.sel = T.srcs.find((q) => q.main) || null;
+  S.sel = T.srcs.find((q) => q.main) || T.srcs[0] || null;
   invalidate();
   listSig = '';
   detSig = '';
@@ -1182,11 +1247,48 @@ function setTarget(T, push) {
   if (push && !T.custom) {
     try {
       history.replaceState(null, '', '#' + T.id);
-    } catch (_) {}
+    } catch (_) { }
   }
 
   syncUI();
   paint();
+
+  /* Attempt to fetch real NASA SPHEREx DR1 pixels for any target not checked yet */
+  if (!T.realEpochs && !T._nasaChecked) {
+    T._nasaChecked = true;
+    $('#tip').innerHTML = '<b>Connecting to NASA/IPAC IRSA...</b> Checking for real SPHEREx DR1 FITS cutouts (2–5s)...';
+    $('#badge').textContent = 'Loading NASA DR1...';
+    try {
+      const liveData = await fetchLiveSpherexPatch(T.ra0, T.dec0, T.fov || 3);
+      T.realEpochs = liveData.realEpochs;
+      if (liveData.srcs && liveData.srcs.length) {
+        T.srcs = liveData.srcs;
+      }
+      T.tip = liveData.tip;
+      if (S.T === T) {
+        S.e = 0;
+        S.sel = T.srcs.find((q) => q.main) || T.srcs[0] || null;
+        invalidate();
+        listSig = '';
+        detSig = '';
+        $('#tip').innerHTML = T.tip;
+        syncUI();
+        paint();
+      }
+    } catch (err) {
+      if (S.T === T) {
+        if (T.isLiveNasa) {
+          $('#tip').innerHTML = `<b>NASA Backend Offline or Unreachable:</b> ${err.message}. Make sure <code>python app.py</code> is running on port 5000.`;
+          $('#badge').textContent = 'Backend offline';
+        } else {
+          $('#tip').innerHTML = T.tip + ' <i>(No DR1 cutout at this spot yet — showing simulation)</i>';
+          syncUI();
+          paint();
+        }
+      }
+    }
+    return;
+  }
 
   if (window.gsap && !reduced) {
     gsap.fromTo(
@@ -1196,20 +1298,33 @@ function setTarget(T, push) {
     );
   }
 }
-
-function go(ra, dec, msg) {
+async function go(ra, dec, msg) {
   if (isNaN(ra) || isNaN(dec) || dec < -90 || dec > 90) {
     $('#coordmsg').textContent =
       'Could not read those coordinates. Try 08h55m10.8s and -7d14m42s, or plain degrees.';
     return;
   }
 
+  const normRa = ((ra % 360) + 360) % 360;
   const known = TARGETS.find(
-    (T) => Math.abs(T.ra0 - ra) < 0.0006 && Math.abs(T.dec0 - dec) < 0.0006
+    (T) => Math.abs(T.ra0 - normRa) < 0.0006 && Math.abs(T.dec0 - dec) < 0.0006
   );
-  $('#coordmsg').textContent =
-    msg || 'Showing a simulated patch with one hidden mover.';
-  setTarget(known || makeCustom(((ra % 360) + 360) % 360, dec), true);
+  if (known) {
+    $('#coordmsg').textContent = msg || `Loaded ${known.name}.`;
+    setTarget(known, true);
+    return;
+  }
+
+  $('#coordmsg').textContent = 'Querying NASA IRSA SPHEREx DR1 for real FITS cutouts...';
+  try {
+    const livePatch = await fetchLiveSpherexPatch(normRa, dec, S.fov || 3);
+    $('#coordmsg').textContent = `Loaded real NASA SPHEREx DR1 data (${livePatch.realEpochs.length} epochs).`;
+    setTarget(livePatch, true);
+  } catch (err) {
+    $('#coordmsg').textContent =
+      msg || `No SPHEREx DR1 coverage at this spot (${err.message}). Showing simulated field.`;
+    setTarget(makeCustom(normRa, dec), true);
+  }
 }
 
 /* ---- pointer on the picture ---- */
@@ -1284,11 +1399,12 @@ function tick(t) {
   const dt = Math.min(0.25, (t - last) / 1000);
   last = t;
 
-  if (S.playing && !document.body.classList.contains('tour')) {
+  const nEp = activeEpochCount();
+  if (S.playing && nEp > 1 && !document.body.classList.contains('tour')) {
     acc += dt;
     if (acc > 1 / S.speed) {
       acc = 0;
-      S.e = (S.e + 1) % NE;
+      S.e = (S.e + 1) % nEp;
       paint();
     }
   }

@@ -1,4 +1,4 @@
-/* Entry point: smooth scrolling, 3-tab view switching, hash routes, guide recipes, and visitor sticky notes. */
+/* Entry point: smooth scrolling, 3-tab view switching, hash routes, guide recipes, and backend-synced sticky notes. */
 
 /* Entrance animation that always ends fully visible, even if restarted mid-way */
 function reveal(sel, y, dur, stag, delay) {
@@ -85,7 +85,7 @@ function setView(v, updHash) {
             ? 'sky-viewer'
             : S.T.id;
       history.replaceState(null, '', '#' + hash);
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 
@@ -191,7 +191,7 @@ if (window.gsap && !reduced && startView === 'viewer') {
   });
 })();
 
-/* ---------- Visitor Sticky-Note Board (EmmaxPlay itchy-bobcat-50) ---------- */
+/* ---------- Visitor Sticky-Note Board (Synced with Flask /api/notes + localStorage fallback) ---------- */
 (function initVisitorNotes() {
   if (!$('#notesSection')) return;
 
@@ -239,21 +239,37 @@ if (window.gsap && !reduced && startView === 'viewer') {
   let activeFilter = 'all';
   let pendingPhoto = null;
 
-  function loadNotes() {
+  async function loadNotes() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/notes`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.notes) && data.notes.length > 0) {
+          notes = data.notes;
+          saveLocalNotes();
+          renderNotes();
+          return;
+        }
+      }
+    } catch (_) { }
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           notes = parsed;
+          renderNotes();
           return;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
+
     notes = DEFAULT_NOTES.map((n) => ({ ...n }));
+    renderNotes();
   }
 
-  function saveNotes() {
+  function saveLocalNotes() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
     } catch (_) {
@@ -431,7 +447,7 @@ if (window.gsap && !reduced && startView === 'viewer') {
 
   $('#notePreviewRm').onclick = () => setPendingPhoto(null);
 
-  $('#noteForm').onsubmit = (e) => {
+  $('#noteForm').onsubmit = async (e) => {
     e.preventDefault();
     const text = $('#noteText').value.trim();
     if (!text) return;
@@ -452,8 +468,16 @@ if (window.gsap && !reduced && startView === 'viewer') {
     };
 
     notes.unshift(newNote);
-    saveNotes();
+    saveLocalNotes();
     renderNotes();
+
+    try {
+      await fetch(`${BACKEND_URL}/api/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newNote)
+      });
+    } catch (_) { }
 
     $('#noteText').value = '';
     setPendingPhoto(null);
@@ -483,18 +507,21 @@ if (window.gsap && !reduced && startView === 'viewer') {
 
   $('#notesResetDemo').onclick = () => {
     notes = DEFAULT_NOTES.map((n) => ({ ...n }));
-    saveNotes();
+    saveLocalNotes();
     renderNotes();
     $('#noteStatus').textContent = 'Sample notes restored.';
   };
 
-  $('#notesGrid').onclick = (e) => {
+  $('#notesGrid').onclick = async (e) => {
     const delBtn = e.target.closest('[data-del]');
     if (delBtn) {
       const id = delBtn.dataset.del;
       notes = notes.filter((n) => n.id !== id);
-      saveNotes();
+      saveLocalNotes();
       renderNotes();
+      try {
+        await fetch(`${BACKEND_URL}/api/notes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      } catch (_) { }
       return;
     }
 
@@ -527,7 +554,6 @@ if (window.gsap && !reduced && startView === 'viewer') {
   });
 
   loadNotes();
-  renderNotes();
 })();
 
 /* ---------- Space Tour Random Fun Facts Card ---------- */
